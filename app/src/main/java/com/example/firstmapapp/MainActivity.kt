@@ -8,9 +8,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,6 +33,10 @@ import com.google.android.gms.location.Priority
 import com.google.android.gms.location.LocationRequest
 import androidx.compose.material3.*
 import androidx.compose.material3.Surface
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.model.CameraPosition
@@ -169,19 +177,33 @@ fun LocationScreen(location: LatLng?, fusedLocationClient: FusedLocationProvider
     var uiSettings by remember {
         mutableStateOf(MapUiSettings(zoomControlsEnabled = true))
     }
+    var customMarkers by remember { mutableStateOf(listOf<LatLng>()) }
+    var selectedMarker by remember { mutableStateOf<LatLng?>(location) }
 
     Box {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
             properties = properties,
-            uiSettings = uiSettings
+            uiSettings = uiSettings,
+            onMapClick = { latLng ->
+                customMarkers = customMarkers + latLng
+                selectedMarker = latLng
+                //address = getAddressFromLocation(context, latLng.latitude, latLng.longitude)
+            }
         ) {
             Marker(
                 state = MarkerState(position = userLatLng),
-                title = "Marina",
-                snippet = "Bald Head Island Marina"
+                title = "User Location",
+                snippet = "You're here"
             )
+            customMarkers.forEach { markerPosition ->
+                Marker(
+                    state = MarkerState(position = markerPosition),
+                    title = "Custom Marker",
+                    snippet = "Lat: ${markerPosition.latitude}, Lng: ${markerPosition.longitude}"
+                )
+            }
         }
 
         var checkedState by remember { mutableStateOf(true) }
@@ -199,6 +221,27 @@ fun LocationScreen(location: LatLng?, fusedLocationClient: FusedLocationProvider
                 }
             }
         )
+    }
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Bottom,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .wrapContentSize()
+                .background(Color.White)
+        ){
+            selectedMarker?.let { loc ->
+                Text(text = "Location: Lat: ${"%.6f".format(loc.latitude)}, Lng: ${"%.6f".format(loc.longitude)}",
+                    style = TextStyle(
+                        fontSize = 20.sp
+                    ),
+                    modifier = Modifier.padding(4.dp)
+                )
+            } ?: Text(text = "Location not available")
+        }
+
     }
 }
 
